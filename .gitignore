@@ -1,0 +1,82 @@
+# Covers every sub-project (java-vs-c#, spring-vs-net, ...)
+
+# ---------- Java / Maven / Gradle ----------
+**/target/
+**/build/
+**/.gradle/
+**/out/
+*.class
+*.jar
+*.war
+*.log
+hs_err_pid*
+replay_pid*
+*.hprof
+*.jfr
+.kotlin/
+!**/.mvn/wrapper/maven-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# ---------- C# / .NET ----------
+**/bin/
+**/obj/
+**/TestResults/
+**/BenchmarkDotNet.Artifacts/
+*.user
+*.suo
+*.userprefs
+*.rsuser
+*.nupkg
+**/packages/
+project.lock.json
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+*.trx
+*.binlog
+*.DotSettings.user
+*.dmp
+*.nettrace
+*.gcdump
+
+# ---------- Spring / ASP.NET runtime files ----------
+**/logs/
+*.db
+*.sqlite
+appsettings.*.local.json
+application-local.*
+.env
+.env.*
+!.env.example
+
+# ---------- IDEs ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.classpath
+.project
+.settings/
+.factorypath
+*.swp
+.history/
+
+# ---------- Claude Code (personal settings; .claude/settings.json is shared) ----------
+.claude/settings.local.json
+CLAUDE.local.md
+
+# ---------- Personal notes ----------
+AI Prog.txt
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk

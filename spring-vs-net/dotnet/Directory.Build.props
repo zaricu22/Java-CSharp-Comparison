@@ -1,0 +1,12 @@
+<Project>
+  <!-- Shared by every project in the solution -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Null-safety violations (e.g. CS8602 "possibly null") fail the build instead of just warning -->
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <!-- Culture-independent number/date formatting, same as the Java side (Locale.US) -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,3 @@
+# Active with --spring.profiles.active=prod (ASP.NET: appsettings.Production.json)
+shop:
+  free-shipping-over: 100

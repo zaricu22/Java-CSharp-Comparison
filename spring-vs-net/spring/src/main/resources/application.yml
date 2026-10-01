@@ -1,0 +1,41 @@
+# Default configuration (ASP.NET: appsettings.json)
+spring:
+  application:
+    name: spring-shop
+  threads:
+    virtual:
+      enabled: true           # every request on a virtual thread - blocking code scales like async
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop   # in-memory H2; a real app would use Flyway/Liquibase migrations
+  mvc:
+    problemdetails:
+      enabled: true           # RFC 9457 error bodies
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    enabled: true        # T16: set explicitly (springdoc warns when it is only on by default); false in production
+    path: /v3/api-docs
+
+shop:
+  currency: EUR
+  free-shipping-over: 50
+  features:
+    recommendations: false
+  jobs:
+    cleanup-rate: PT1H
+  rate-limit:
+    permits: 3
+    window: PT10S
+  supplier:
+    base-url: http://localhost:9090   # T18: the supplier's REST API
