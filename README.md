@@ -18,6 +18,8 @@ Each folder has its own `run.ps1` (Windows PowerShell) and `run.sh` (Linux, macO
   - [Why the projects moved to Java 25](#why-the-projects-moved-to-java-25)
   - [Observed measurements on both JDKs (with minor code changes)](#observed-measurements-on-both-jdks-with-minor-code-changes)
   - [Why Java 25 is faster (when the syntax is nearly the same)](#why-java-25-is-faster-when-the-syntax-is-nearly-the-same)
+- [Troubleshooting](#troubleshooting)
+- [Further reading](#further-reading)
 
 ## Measurement scripts
 
@@ -85,3 +87,46 @@ For comparison, C# / .NET 10 on the same rows: T21 61 ms / 35 MB / 16 bytes per 
 > **The takeaway:** upgrading the JDK gives a free 10–20% on startup, builds and allocation-heavy code without touching the source. .NET still leads on every row here with default settings, but Java 25's opt-in features (AOT cache, compact headers) close a large part of the startup and memory gap.
 >
 > **Caveats:** one machine (Ryzen 5 5600H, 15.3 GB RAM, Windows 11), default settings, medians of 3–5 runs. Differences below about 5% (the full demo run, T01 time) are within run-to-run noise.
+
+## Troubleshooting
+
+**Toolchain**
+
+| Symptom | Fix |
+|---|---|
+| `JDK 25+ not found. Set JAVA25_HOME to its folder.` | Install a JDK 25, or point `JAVA25_HOME` at one. The scripts search `JAVA25_HOME`, `JAVA_HOME`, `~/.jdks`, `C:\Program Files\Java`, `/usr/lib/jvm` and `/Library/Java/JavaVirtualMachines`. |
+| `mvn` run by hand fails with `release version 25 not supported` | `JAVA_HOME` points to an older JDK; Maven compiles with whatever JDK that is. Set `JAVA_HOME` to the JDK 25 for that shell, or use `run.ps1` / `run.sh`, which do it for one run. |
+| `A compatible .NET SDK was not found` | `global.json` asks for SDK 10.0.100 or a later 10.0 feature band. Install the .NET 10 SDK; `dotnet --list-sdks` shows what is installed. |
+| Maven or NuGet can't download packages: `Permission denied: getsockopt`, `WSAEACCES`, or `PKIX path building failed` | A firewall or antivirus blocks outbound connections from `java.exe` / `dotnet.exe`, or intercepts HTTPS. Allow both programs, or download the dependencies with a tool that isn't blocked: into `~/.m2` for Maven (then `mvn -o`), and into a local folder for NuGet (then `dotnet restore --source <folder>`). This happened on the machine the project was built on. |
+| `run.ps1 cannot be loaded because running scripts is disabled` | `powershell -ExecutionPolicy Bypass -File .\run.ps1 ...`, or `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once. |
+| `run.sh`: `Permission denied`, or `/usr/bin/env: 'bash\r'` | Start it with `bash run.sh ...`, or `chmod +x run.sh`. The `\r` error means the file was checked out with Windows line endings: convert it to LF (`dos2unix run.sh`, or `git config core.autocrlf input` and check out again). |
+
+**Running the apps (spring-vs-net)**
+
+| Symptom | Fix |
+|---|---|
+| `Choose one app to run: -Side spring or -Side dotnet` | `-Mode run` starts one server at a time. Pass `-Side spring` or `-Side dotnet` (`--side` in `run.sh`). |
+| `Port 8080 was already in use` (Spring), or `address already in use` on 5080 (ASP.NET) | Stop the other process, or pick another port: `mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081`, `dotnet run --project src/Shop.Api --urls http://localhost:5081`. |
+| ASP.NET app refuses to start with a configuration validation error, or uses the wrong (SMTP) mail sender | It reads `appsettings.json` from the *current directory*, and without `launchSettings.json` it runs as `Production`. Start it from `spring-vs-net/dotnet` with `dotnet run --project src/Shop.Api`, or from the build output folder for `dotnet Shop.Api.dll`. |
+| `401` on `/api/admin/...` | The admin endpoints use HTTP Basic: `curl -u admin:admin-pass ...`. |
+| Spring tests take noticeably longer than the ASP.NET ones | Expected: tests that change data use `@DirtiesContext`, and each one starts a new Spring context (~1 s). |
+
+**Measurement scripts (`tools/`)**
+
+| Symptom | Fix |
+|---|---|
+| The `Measure-*.ps1` scripts fail on Linux or macOS | They read peak memory through the Windows API (`GetProcessMemoryInfo`), so they only run on Windows. The tests and demos run everywhere. |
+| `Measure-Server.ps1`: `<Label> did not start (exit code N)` | Build the deployable first (`mvn -q package -DskipTests`, `dotnet build src/Shop.Api -c Release`), check that `-Dir` and the port are right, and that nothing else uses the port. |
+| `mvn -o ...` in a measurement command fails with an artifact that "has not been downloaded" | Offline mode only uses `~/.m2`. Run one normal build (`mvn -q package`) first. |
+| Numbers vary a lot between runs, or a run gets killed | Close other programs: low free RAM and background load distort the medians. Differences below about 5% are noise anyway. |
+
+---
+
+## Further reading
+
+- Java: [JDK 25](https://openjdk.org/projects/jdk/25/) · [JEP 512: instance main methods](https://openjdk.org/jeps/512) · [JEP 456: unnamed variables](https://openjdk.org/jeps/456) · [JEP 444: virtual threads](https://openjdk.org/jeps/444) · [JEP 483: AOT class loading](https://openjdk.org/jeps/483) · [JEP 519: compact object headers](https://openjdk.org/jeps/519) · [Java Language Specification](https://docs.oracle.com/javase/specs/)
+- C# and .NET: [What's new in C# 14](https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-14) · [What's new in .NET 10](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/overview) · [C# language reference](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/) · [`global.json`](https://learn.microsoft.com/en-us/dotnet/core/tools/global-json)
+- Spring: [Spring Boot reference](https://docs.spring.io/spring-boot/reference/) · [Spring Framework reference](https://docs.spring.io/spring-framework/reference/) · [Spring Data JPA](https://docs.spring.io/spring-data/jpa/reference/) · [Spring Security](https://docs.spring.io/spring-security/reference/) · [Efficient deployments (extracted jar, AOT cache)](https://docs.spring.io/spring-boot/reference/packaging/efficient.html)
+- ASP.NET Core: [Documentation](https://learn.microsoft.com/en-us/aspnet/core/) · [What's new in ASP.NET Core 10](https://learn.microsoft.com/en-us/aspnet/core/release-notes/aspnetcore-10.0) · [EF Core](https://learn.microsoft.com/en-us/ef/core/) · [Output caching](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/output) · [Rate limiting](https://learn.microsoft.com/en-us/aspnet/core/performance/rate-limit)
+- Testing: [JUnit user guide](https://docs.junit.org/current/user-guide/) · [xUnit.net](https://xunit.net/)
+- Benchmarking (for anything finer than the whole-process measurements here): [JMH](https://github.com/openjdk/jmh) · [BenchmarkDotNet](https://benchmarkdotnet.org/) · [TechEmpower Framework Benchmarks](https://www.techempower.com/benchmarks/)
