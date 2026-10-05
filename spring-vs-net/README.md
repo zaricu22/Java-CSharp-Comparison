@@ -382,28 +382,53 @@ How these numbers were produced: see [Methodology](#performance-and-other-measur
 *enterprise* concerns; ASP.NET Core gives you more for the *web* layer, with less memory and faster startup. In practice the
 choice also follows the language, the existing systems and the team.
 
-**Choose Spring Boot when:**
-- **Business logic needs framework support:** declarative transactions (T07), in-process events (T08), AOP across the service
-  layer (T09), scheduling with cron (T10), method-level security expressions (T12).
-- **You want the container to do the wiring:** component scanning and `Map` injection of all implementations (T02),
-  profiles and conditional beans (T03), repositories whose queries are derived from method names (T05), and Actuator
-  health checks with details out of the box (T14).
-- **You want less hand-written plumbing for common API features:** pagination (T17), declarative HTTP clients (T18) and API
-  versioning (T19) are built in.
-- **The system is integration-heavy:** Spring Batch, Spring Integration, RabbitMQ/Kafka support, OAuth2/SAML/LDAP and Spring
-  Cloud go further than what .NET ships first-party (see [Source notes: Not covered by samples](#source-notes-not-covered-by-samples)).
-- **The organisation is a JVM shop**, typically banking, insurance and government, where Java + Spring is the default.
-
 **Choose ASP.NET Core when:**
-- **You build lean, fast web APIs:** minimal APIs (T01), validation and ProblemDetails (T04), rate limiting (T13), OpenAPI
-  (T16), output caching (T21) and a complete user-account system (T20) are built in.
+- **Security and traffic features (built in):** a complete user-account system (T20), rate limiting (T13) and
+  HTTP output caching (T21). Spring needs hand-written code or third-party libraries for all three.
+- **Web API code should be minimal (built in):** minimal APIs (T01), validation with ProblemDetails (T04) and OpenAPI (T16) need less
+  code than in Spring.
 - **Startup time and memory matter**, for example many small containers: 2.1 s / 105 MB vs 8.4 s / about 400 MB for Spring with
   default settings (see [Performance: measured results](#performance-measured-results)).
-- **Complex queries should be compiler-checked:** LINQ instead of JPQL strings (T06).
-- **You prefer explicit wiring:** `Program.cs` shows everything that runs, which makes problems easier to trace.
-- **Real-time features or a Microsoft/Azure environment** are part of the plan (SignalR, first-class Azure tooling).
+- **Raw throughput and less runtime tuning matter:** ASP.NET leads public benchmarks (about 30% ahead here on the no-database
+  endpoint), the GC mostly needs no flags, and Native AOT works with minimal APIs out of the box.
+- **Data access should be compiler-checked and simple to set up:** LINQ instead of JPQL strings (T06), plus typed includes,
+  projections and bulk updates. Several databases are just one `AddDbContext<T>()` each.
+  <br> Note: Java can get close with the Criteria metamodel, QueryDSL..
+- **You want the compiler to catch null errors in controllers and services:** nullable reference types are checked at build
+  time. Spring 7's JSpecify `@Nullable` needs extra tools like NullAway.
+- **You prefer explicit wiring:** `Program.cs` shows everything that runs, DI errors name the missing service, and files can
+  live anywhere. Problems are easier to trace.
+- **A fast inner development loop matters:** `dotnet watch` hot reload keeps app state, and scaffolding generates controllers,
+  Identity UI and EF code.
+- **Outgoing HTTP calls must be resilient (built in):** `AddStandardResilienceHandler()` adds retry, circuit breaker and timeouts in one
+  line. Spring's `@Retryable` (T11) has no circuit breaker.
+- **Real-time features are part of the plan (built in):** SignalR gives hubs, groups, automatic reconnect and client libraries. Spring
+  WebSocket + STOMP is lower-level.
+- **The environment is Microsoft/Azure:** first-class Azure tooling, .NET Aspire and YARP.
+
+**Choose Spring Boot when:**
+- **Business logic needs framework support (built in):** declarative transactions (T07), in-process events (T08), AOP across
+  the service layer (T09) and scheduling with cron (T10). C# needs third-party libraries.
+- **Security requirements are broad (built in):** method-level security expressions (T12), plus first-party OAuth2 login, client and
+  resource server, SAML 2.0, LDAP, ACLs and Spring Authorization Server.
+- **You want the container to do the wiring:** auto-configuration from starters that your own beans can override, component
+  scanning and Map injection of all implementations (T02), profiles and conditional beans (T03), and lifecycle hooks
+  (`@PostConstruct`, `@PreDestroy`, `SmartLifecycle`).
+- **Repositories should need no implementation (built in):** queries derived from method names (T05), and a `Pageable` parameter gives
+  paging, sorting and totals (T17).
+- **You want less hand-written plumbing for remote APIs (built in):** declarative HTTP clients (T18) and API versioning (T19).
+- **Production monitoring (built in):** Actuator health with details (T14), metrics, runtime log levels and
+  the conditions report.
+- **The system is integration-heavy:** Spring Batch, Spring Integration, `@RabbitListener`/`@KafkaListener` with retries and
+  dead-letter handling, and Apache Camel for legacy systems (SAP, mainframes). These go further than what .NET ships first-party
+  (see [Source notes: Not covered by samples](#source-notes-not-covered-by-samples)).
+- **You run many services that need shared infrastructure:** Spring Cloud Gateway, Config Server, service discovery and
+  Kubernetes integration. .NET has Aspire and YARP, but less of it.
+- **The organisation is a JVM company/team**, typically banking, insurance and government, where Java + Spring is the default.
 
 **Before deciding, keep in mind:**
+- **The "fast development (.NET) vs large enterprise (Java)" split is mostly history.** Banks and governments built their core
+  systems in Java 15–20 years ago and never switched. Today either framework can build a large system or a quick prototype.
 - **The tally (Spring 12 · ASP.NET 7) counts topics, not their weight.** One missing feature that your project needs (for example
   a built-in rate limiter, or a user-account system) can matter more than several conveniences on the other side.
 - **Spring's startup gap can be mostly closed, at a cost.** With default settings Spring starts in 8.4 s and ASP.NET in

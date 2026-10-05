@@ -366,28 +366,49 @@ How these numbers were produced: see [Methodology](#performance-and-other-measur
 platform, the existing systems and the team than by syntax. Where the language itself matters, this is what the samples show.
 
 **Choose C# when:**
-- **Expressive, compact code matters.** Properties, LINQ, `async`/`await`, extension methods, optional/named arguments,
-  indexers and collection expressions make everyday code shorter and clearer (T01, T02, T04, T06, T10, T11, T23). That's most
-  of C#'s 15 topic wins.
-- **More powerful generics and compile-time tools.** Reified generics and generic math (T03), exception filters and
-  `checked` arithmetic (T12), partial classes, source generators and conditional compilation (T13), `yield` and async
-  streams (T19), and lambdas that can be translated to SQL (T20).
+- **Less boilerplate in classes and methods (built in).** Properties and records with `with` (T01), extension methods (T06), optional/named
+  arguments, `out`/`ref` and tuple returns (T10), indexers (T11), object initializers, operator overloading and user-defined
+  conversions, and no checked exceptions.
+- **Concise data and query code (built in).** LINQ (T04), string interpolation (T02), ranges and indices (T11), collection expressions (T23),
+  tuples and deconstruction, list patterns, null operators (?. ??), `async`/`await`, `yield` and async streams (T19).
+  Together with the bullet above, that's most of C#'s 15 topic wins.
+- **More powerful generics (built in).** Reified generics and generic math (T03); no boxing for value types, richer constraints, default(T),
+  typeof(T) and new T() work inside generic code.
+  <br>Unified type system: int is a struct that derives from object, so 5.ToString() works and there is no int/Integer split.
+- **Compile-time tools (built in).** Partial classes, source generators and conditional compilation (T13), lambdas that can be translated
+  to SQL (T20); nameof(x), caller info attributes and Roslyn analyzers with code fixes. Exception filters and `checked`
+  arithmetic (T12) handle errors more precisely.
+- **You want the compiler to catch null errors.** Nullable reference types are checked at build time (T18). By default
+  they are warnings; this repo turns them into errors with `<WarningsAsErrors>nullable</WarningsAsErrors>`.
+- **Your platform points to .NET:** Windows desktop (WPF, WinUI), games (Unity, Godot), Microsoft- and Azure-centred companies.
 - **Memory and performance-sensitive code.** Value types, `Span` and `stackalloc` avoid allocations (T05, T21: 16 vs 36 bytes
   per point), and short-running programs start faster with less RAM (see [Performance: measured results](#performance-measured-results)).
-- **You want the compiler to stop null errors.** Nullable reference types are checked at build time (T18).
-- **The platform points to .NET:** Windows desktop (WPF, WinUI), games (Unity, Godot), Microsoft- and Azure-centred companies.
+  - Note: C# wins on short runs because it starts faster and allocates less (JVM sizes its heap, structs/Span/stackalloc avoid heap). It doesn't execute the code faster.
+      <br> Where it's not true: Raw execution speed, class object cost, Java closing gap with CDS/AOT and JVM tuning(-Xmx, SerialGC).
+- **Native interop and low-level control matter (built in).** Unsigned types (uint, ushort, ulong), ref returns and ref locals,
+  P/Invoke marshalling, function pointers, unsafe pointers, fixed/pinning and StructLayout unions. Java 22+ narrows this with the FFM API.
 
 **Choose Java when:**
 - **Compile-time safety of the design matters.** Checked exceptions force error handling (T14), sealed hierarchies make
-  `switch` exhaustive (T09), and enums can't hold invalid values (T15). These are Java's wins, and they prevent runtime bugs.
-- **Flexible object-oriented code.** Anonymous classes implement interfaces inline and inner classes see their outer
+  `switch` exhaustive (T09), and enums can't hold invalid values (T15), lambdas capturing variables that change (T07), final fields must be assigned,
+  unreachable code is error instead of a warning. These are Java's wins, and they prevent runtime bugs.
+  - Note: C# prevents some bugs Java doesn't: nullable reference types catch null errors at build time (T18), 
+        checked arithmetic catches integer overflow (T12), no accidental switch fall-through, override is required, while Java's @Override is optional, 
+        == on strings compares values, not references
+- **Flexible object-oriented code (built in).** Anonymous classes implement interfaces inline and inner classes see their outer
   instance (T16), use-site variance `? super` works on any type (T17), and labeled `break`/`continue` leave nested loops
-  directly (T24).
-- **The platform points to the JVM:** Android (with Kotlin), big data (Spark, Kafka, Flink, Hadoop), and large enterprise
+  directly (T24); Enums are full classes, Local types (class,record,enum,interface inside method), Sealed hierarchies are flexible, Virtual by default (any method can be overridden).
+- **Your platform points to the JVM:** Android (with Kotlin), big data (Spark, Kafka, Flink, Hadoop), and large enterprise
   backends in banking, insurance and government.
 - **You want a vendor-neutral platform with the largest library ecosystem:** many JDK vendors, the JCP, and Maven Central.
-- **Blocking code at scale or long-running servers:** virtual threads make simple blocking code scale (T08), and the JIT is
-  strong over long runs.
+- **Long-term stability matters.** Old libraries and bytecode still run on new JDKs, and type erasure let generics be added without breaking old code. .NET had the .NET Framework vs .NET Core split.
+- **Simple blocking code must scale (built in).** Virtual threads let plain blocking code handle many concurrent requests without
+  async/await (T08).
+- **Long-running servers.** The JIT is strong over long runs.
+  - Note: Collecting profiles and compiling with C2(optimizing compiler) takes time and CPU, short program finishes before most of its code ever reaches the C2 stage.
+          <br>.NET now does much of the same thing, the main remaining difference is deoptimization, .NET doesn't throw away compiled code to go back to an earlier tier.
+  - Memory reclamation: SoftReference for memory-sensitive caches and PhantomReference/Cleaner for cleanup after an object
+    is unreachable. C# has only weak references and finalizers.
 
 **Before deciding, keep in mind:**
 - **Java has caught up in several areas** the source notes still gave to C#: lambdas and functions (T07), async with virtual
